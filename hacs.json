@@ -1,5 +1,5 @@
 {
-  "name": "Garbage Collection (fork Morgane - FR + jours feries)",
+  "name": "Collecte des poubelles",
   "domains": ["sensor"],
   "homeassistant": "2022.12.0b0"
 }
