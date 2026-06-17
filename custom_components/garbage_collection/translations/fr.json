@@ -16,7 +16,7 @@
                     "expire_after": "Expire après (HH:MM)",
                     "verbose_state": "Etat verbeux (texte, au lieu du chiffre)",
                     "move_country_holidays": "Décaler la collecte si jour férié dans la semaine",
-                    "holiday_country": "Code pays pour les jours fériés (ex: FR)"
+                    "holiday_dates": "Dates qui décalent la collecte d'un jour (format MM-JJ, séparées par des virgules)"
                 }
             },
             "detail": {
@@ -71,7 +71,7 @@
                     "expire_after": "Expire après (HH:MM)",
                     "verbose_state": "Etat verbeux (texte, au lieu du chiffre)",
                     "move_country_holidays": "Décaler la collecte si jour férié dans la semaine",
-                    "holiday_country": "Code pays pour les jours fériés (ex: FR)"
+                    "holiday_dates": "Dates qui décalent la collecte d'un jour (format MM-JJ, séparées par des virgules)"
                 }
             },
             "detail": {

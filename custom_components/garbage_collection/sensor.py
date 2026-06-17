@@ -5,8 +5,8 @@ import logging
 from datetime import date, datetime, time, timedelta
 from typing import Any, Dict, Generator
 
+from dateutil.easter import easter
 from dateutil.relativedelta import relativedelta
-import holidays
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     ATTR_DEVICE_CLASS,
@@ -71,8 +71,8 @@ class GarbageCollection(RestoreEntity):
         "_days",
         "_first_month",
         "_hidden",
-        "_holiday_country",
-        "_holidays_calendar",
+        "_holiday_dates",
+        "_move_holidays",
         "_icon_normal",
         "_icon_today",
         "_icon_tomorrow",
@@ -126,23 +126,25 @@ class GarbageCollection(RestoreEntity):
         self._verbose_format = config.get(
             const.CONF_VERBOSE_FORMAT, const.DEFAULT_VERBOSE_FORMAT
         )
-        self._holiday_country = config.get(
-            const.CONF_HOLIDAY_COUNTRY, const.DEFAULT_HOLIDAY_COUNTRY
-        )
-        if config.get(const.CONF_MOVE_COUNTRY_HOLIDAYS, False):
-            try:
-                self._holidays_calendar = holidays.country_holidays(
-                    self._holiday_country
-                )
-            except NotImplementedError:
-                _LOGGER.error(
-                    "(%s) Unknown country code for holidays: %s",
-                    self._attr_name,
-                    self._holiday_country,
-                )
-                self._holidays_calendar = None
-        else:
-            self._holidays_calendar = None
+        self._holiday_dates: set[tuple[int, int]] = set()
+        self._move_holidays = bool(config.get(const.CONF_MOVE_COUNTRY_HOLIDAYS, False))
+        if self._move_holidays:
+            raw_dates = config.get(
+                const.CONF_HOLIDAY_DATES, const.DEFAULT_HOLIDAY_DATES
+            )
+            for chunk in raw_dates.split(","):
+                chunk = chunk.strip()
+                if not chunk:
+                    continue
+                try:
+                    month_str, day_str = chunk.split("-")
+                    self._holiday_dates.add((int(month_str), int(day_str)))
+                except ValueError:
+                    _LOGGER.error(
+                        "(%s) Invalid holiday date '%s', expected format MM-DD",
+                        self._attr_name,
+                        chunk,
+                    )
         self._collection_dates: list[date] = []
         self._next_date: date | None = None
         self._last_updated: datetime | None = None
@@ -378,31 +380,40 @@ class GarbageCollection(RestoreEntity):
                 yield next_date
                 first_date = next_date + relativedelta(days=1)  # look from the next day
 
-    def _shift_for_holiday(self, collection_date: date) -> date:
-        """Move the date forward if a public holiday falls on it or earlier that week.
+    def _is_exception_date(self, day: date) -> bool:
+        """Check if a date matches a configured fixed exception, or a movable one.
 
-        First check Monday..collection_date (inclusive) for a holiday: if any day in
-        that range is a holiday, move forward by one day. Then keep moving forward,
-        one day at a time, while the new candidate day is itself a holiday.
+        Fixed exceptions come from the configured MM-DD list (e.g. Christmas,
+        New Year, Labour Day for collectors that only shift on those).
+        Movable exceptions are always checked too: Easter Monday and Whit
+        Monday (Pentecost Monday) are the only French public holidays that
+        ever fall on a Monday, which only matters for Monday-based schedules
+        and is harmless to check for any other day.
         """
-        if self._holidays_calendar is None:
+        if (day.month, day.day) in self._holiday_dates:
+            return True
+        easter_sunday = easter(day.year)
+        easter_monday = easter_sunday + timedelta(days=1)
+        pentecost_monday = easter_sunday + timedelta(days=50)
+        return day in (easter_monday, pentecost_monday)
+
+    def _shift_for_holiday(self, collection_date: date) -> date:
+        """Move the date forward by one day for each matching exception date.
+
+        Cascades forward if the new day also matches an exception date.
+        """
+        if not self._move_holidays:
             return collection_date
-        monday = collection_date - timedelta(days=collection_date.weekday())
-        week_has_holiday = any(
-            (monday + timedelta(days=i)) in self._holidays_calendar
-            for i in range(collection_date.weekday() + 1)
-        )
-        if not week_has_holiday:
-            return collection_date
-        shifted = collection_date + timedelta(days=1)
-        while shifted in self._holidays_calendar:
+        shifted = collection_date
+        while self._is_exception_date(shifted):
             shifted = shifted + timedelta(days=1)
-        _LOGGER.debug(
-            "(%s) %s shifted to %s because of a public holiday",
-            self._attr_name,
-            collection_date,
-            shifted,
-        )
+        if shifted != collection_date:
+            _LOGGER.debug(
+                "(%s) %s shifted to %s because of a configured exception date",
+                self._attr_name,
+                collection_date,
+                shifted,
+            )
         return shifted
 
     async def _async_load_collection_dates(self) -> None:

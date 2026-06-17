@@ -15,7 +15,7 @@
                     "expire_after": "Expire after (HH:MM) - optional",
                     "verbose_state": "Verbose state (text, instead of number)",
                     "move_country_holidays": "Shift collection if a public holiday falls in the week",
-                    "holiday_country": "Country code for public holidays (e.g. FR)"
+                    "holiday_dates": "Dates that shift collection by one day (format MM-DD, comma separated)"
                 }
             },
             "detail": {
@@ -69,7 +69,7 @@
                     "expire_after": "Expire after (HH:MM) - optional",
                     "verbose_state": "Verbose state (text, instead of number)",
                     "move_country_holidays": "Shift collection if a public holiday falls in the week",
-                    "holiday_country": "Country code for public holidays (e.g. FR)"
+                    "holiday_dates": "Dates that shift collection by one day (format MM-DD, comma separated)"
                 }
             },
             "detail": {

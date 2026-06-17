@@ -95,9 +95,9 @@ async def general_config_schema(
                 const.DEFAULT_HOLIDAY_IN_WEEK_MOVE,
             ): bool,
             optional(
-                const.CONF_HOLIDAY_COUNTRY,
+                const.CONF_HOLIDAY_DATES,
                 handler.options,
-                const.DEFAULT_HOLIDAY_COUNTRY,
+                const.DEFAULT_HOLIDAY_DATES,
             ): selector.TextSelector(),
         }
     )
@@ -135,9 +135,9 @@ async def general_options_schema(
                 const.DEFAULT_HOLIDAY_IN_WEEK_MOVE,
             ): bool,
             optional(
-                const.CONF_HOLIDAY_COUNTRY,
+                const.CONF_HOLIDAY_DATES,
                 handler.options,
-                const.DEFAULT_HOLIDAY_COUNTRY,
+                const.DEFAULT_HOLIDAY_DATES,
             ): selector.TextSelector(),
         }
     )
